@@ -1,0 +1,132 @@
+---
+title: "Gantt Chart for Research, Teaching & Service Activities"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(lubridate)
+library(stringr)
+library(ggh4x)
+library(ggtext)
+
+```
+
+``` {r gantt-chart-2025, fig.width=12, fig.height=8, dpi=300, echo=FALSE}
+
+peony_red <- "#9E3D40"
+
+# tasks-data chunk
+task_data <- tribble(
+  ~Area, ~Project, ~Task, ~Start, ~End,
+
+  # Research
+  "Research", "BSLA-focused \u2014\n1. Tier 3 study", 
+    "Reaffirm project aims & interest", "2025-01-01", "2025-04-17",
+  "Research", "BSLA-focused \u2014\n1. Tier 3 study", 
+    "Prepare & submit ethics application", "2025-04-01", "2025-06-30",
+  "Research", "BSLA-focused \u2014\n1. Tier 3 study", 
+    "Conduct interviews & focus groups", "2025-07-01", "2025-09-30",
+  "Research", "BSLA-focused \u2014\n1. Tier 3 study", 
+    "Facilitate co-design & problem-solving", "2025-08-01", "2025-11-30",
+  "Research", "BSLA-focused \u2014\n1. Tier 3 study", 
+    "Data synthesis & draft report", "2025-12-01", "2025-12-31",
+  
+  "Research", "BSLA-focused \u2014\n2. SSSR Submission", "Authorship & collaboration", "2025-03-01", "2025-03-31",
+  "Research", "BSLA-focused \u2014\n2. SSSR Submission", "Analysis plan", "2025-03-15", "2025-04-30",
+  "Research", "BSLA-focused \u2014\n2. SSSR Submission", "Ethics", "2025-04-01", "2025-04-30",
+  "Research", "BSLA-focused \u2014\n2. SSSR Submission", "Data collection", "2025-05-01", "2025-08-31",
+  "Research", "BSLA-focused \u2014\n2. SSSR Submission", "Analyse data", "2025-07-01", "2025-09-30",
+  "Research", "BSLA-focused \u2014\n2. SSSR Submission", "Write & submit abstract", "2025-10-01", "2025-10-31",
+
+  "Research", "UC-wide \u2014\n3. CAM Analyses", "Set project aim & roles", "2025-06-01", "2025-06-30",
+  "Research", "UC-wide \u2014\n3. CAM Analyses", "Exploratory data analysis", "2025-07-01", "2025-08-31",
+  "Research", "UC-wide \u2014\n3. CAM Analyses", "Data analysis plan", "2025-08-01", "2025-09-30",
+  "Research", "UC-wide \u2014\n3. CAM Analyses", "Analysis & Reporting", "2025-10-01", "2025-12-31",
+
+  "Research", "NZ & Int'l \u2014\n4. TLRI App", "Refine idea & affirm collaborators", "2025-03-01", "2025-03-31",
+  "Research", "NZ & Int'l \u2014\n4. TLRI App", "EOI submission", "2025-04-01", "2025-04-30",
+  "Research", "NZ & Int'l \u2014\n4. TLRI App", "Shortlist notification", "2025-06-23", "2025-06-23",
+  "Research", "NZ & Int'l \u2014\n4. TLRI App", "TBD submit application", "2025-08-01", "2025-08-21",
+
+  "Research", "US-bas \u2014\n5. ER MS", "Draft manuscript", "2025-01-01", "2025-02-28",
+  "Research", "US-bas \u2014\n5. ER MS", "Final revisions", "2025-03-01", "2025-03-31",
+  "Research", "US-bas \u2014\n5. ER MS", "Submit manuscript", "2025-04-01", "2025-04-15",
+
+  # Teaching
+  "Teaching", "BSLA-foc. \u2014\n6. Workshops", "Content development", "2025-01-01", "2025-07-01",
+  "Teaching", "BSLA-foc. \u2014\n6. Workshops", "Term 2 provision", "2025-05-05", "2025-05-23",
+  "Teaching", "BSLA-foc. \u2014\n6. Workshops", "Term 3 provision", "2025-07-01", "2025-08-31",
+  "Teaching", "BSLA-foc. \u2014\n6. Workshops", "Term 4 provision", "2025-10-01", "2025-11-30",
+  
+  "Teaching", "BSLA-fo \u2014\n7. BSLA401", "Content development", "2025-03-26", "2025-05-30",
+  "Teaching", "BSLA-fo \u2014\n7. BSLA401", "Course Coordination", "2025-05-05", "2025-12-31",
+  "Teaching", "BSLA-fo \u2014\n7. BSLA401", "Communities of practice", "2025-06-01", "2025-12-31",
+  
+  "Teaching", "UC-wide \u2014\n8. EDME638", "Course prep", "2025-06-1", "2025-7-31",
+  "Teaching", "UC-wide \u2014\n8. EDME638", "Lecture and marking", "2025-07-14", "2025-10-17",
+  "Teaching", "UC-wide \u2014\n8. EDME638", "Examination", "2025-10-17", "2025-11-08",
+
+  # Service
+  "Service", "UC-wide \u2014\n9. HREC", "Set expectations", "2025-03-01", "2025-03-31",
+  "Service", "UC-wide \u2014\n9. HREC", "Committee engagement", "2025-07-01", "2025-12-31",
+  "Service", "UC-wide \u2014\n9. HREC", " ", " ", " ",
+  "Service", "UC-wide \u2014\n9. HREC", " ", " ", " ",
+  
+  "Service", "Int'l \u2014\n10. Rev", "Manuscript peer review", "2025-01-01", "2025-12-31",
+  "Service", "Int'l \u2014\n10. Rev", " ", " ", " ",
+  "Service", "Int'l \u2014\n10. Rev", " ", " ", " ",
+  "Service", "Int'l \u2014\n10. Rev", " ", " ", " "
+)
+
+peony_red <- "#9E3D40"
+
+# Explicitly call your separated data
+tasks <- task_data %>%
+  filter(Task != "") %>%   # remove any empty rows
+  mutate(
+    Start = ymd(Start),
+    End = ymd(End),
+    Area = factor(Area, levels = c("Research", "Teaching", "Service")),
+    Project = factor(Project, levels = unique(Project)),
+    Task = factor(Task, levels = rev(unique(Task)))
+  )
+
+# plotting exactly as before
+ggplot(tasks, aes(x = Start, xend = End, y = Task)) +
+  geom_segment(aes(yend = Task), linewidth = 6, color = peony_red, alpha = 0.8) +
+  geom_point(aes(x = Start), size = 2.5, color = peony_red) +
+  geom_point(aes(x = End), size = 2.5, color = peony_red) +
+  facet_nested(Area + Project ~ ., scales = "free_y", space = "free_y", switch = "y") +
+  scale_x_date(
+    date_breaks = "1 month",
+    date_labels = "%b '%y",
+    limits = c(as.Date("2025-01-01"), as.Date("2025-12-31"))
+  ) +
+  labs(
+    title = "Gantt Chart of 2025 Research, Teaching & Service Activities",
+    x = "Timeline",
+    y = NULL,
+    caption = "Mark LaVenia, Senior Lecturer | UC Child Well-being Research Institute"
+  ) +
+  theme_minimal(base_size = 10) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 8),
+    panel.grid.major.y = element_blank(),
+    strip.text.y.left = element_text(angle = 90, face = "bold", size = 9, hjust = 0.5, vjust = 0.5),
+    strip.text.y.right = element_text(angle = 90, face = "italic", size = 8, hjust = 0.5, vjust = 0.5),
+    strip.placement = "outside",
+    strip.background = element_rect(fill = NA, color = NA),
+    ggh4x.facet.nestline = element_line(color = "gray80")
+  )
+
+ggsave("2025_gantt_chart.png", width = 15, height = 12, dpi = 300, bg = "white")
+
+
+```
+
